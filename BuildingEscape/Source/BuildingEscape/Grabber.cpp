@@ -24,8 +24,16 @@ void UGrabber::BeginPlay()
 
 	UE_LOG(LogTemp, Warning, TEXT("Grabber reporting for duty!"));
 
-	// ...
-	
+	/// Look for attached Physics Handle
+	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
+	if (PhysicsHandle)
+	{
+		//Physics handle is found
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("% missing physics handle component"), *GetOwner()->GetName())
+	}
 }
 
 
@@ -34,22 +42,17 @@ void UGrabber::TickComponent( float DeltaTime, ELevelTick TickType, FActorCompon
 {
 	Super::TickComponent( DeltaTime, TickType, ThisTickFunction );
 
-	// Get player viewpoint this tick
+	/// Get player viewpoint this tick
 	FVector PlayerViewPointLocation;
 	FRotator PlayerViewPointRotation;
 	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(
 		OUT PlayerViewPointLocation,
 		OUT PlayerViewPointRotation
 	);
-	// TODO Log out to test
-
-	//UE_LOG(LogTemp, Warning, TEXT("Location: %s, Rotation: %s"), 
-	//	*PlayerViewPointLocation.ToString(), 
-	//	*PlayerViewPointRotation.ToString());
 
 	FVector LineTraceEnd = PlayerViewPointLocation + (PlayerViewPointRotation.Vector() * Reach);
 
-	//Draw a red trace in the world to visual
+	///Draw a red trace in the world to visual
 	DrawDebugLine(
 		GetWorld(),
 		PlayerViewPointLocation,
@@ -61,9 +64,25 @@ void UGrabber::TickComponent( float DeltaTime, ELevelTick TickType, FActorCompon
 		10.f
 	);
 
+	/// Setup query parameters
+	FCollisionQueryParams TraceParamters(FName(TEXT("")), false, GetOwner());
 
-	// Ray-cast out to reach distance
+	///Line-trace (AKA ray-cast) out to reach distance
+	FHitResult Hit;
+	GetWorld()->LineTraceSingleByObjectType(
+		OUT Hit,
+		PlayerViewPointLocation,
+		LineTraceEnd,
+		FCollisionObjectQueryParams(ECollisionChannel::ECC_PhysicsBody),
+		TraceParamters
+	);
 
-	// See what we hit
+	/// See what we hit
+	AActor* ActorHit = Hit.GetActor();
+	if (ActorHit)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Line trace hit: %s"), *(ActorHit->GetName()))
+	}
+
 }
 
